@@ -1,5 +1,5 @@
 {
-  "image": "rapidsai/devcontainers:23.06-cpp-gcc9-cuda12.0-ubuntu22.04"
+  "image": "rapidsai/devcontainers:23.06-cpp-gcc9-cuda12.0-ubuntu22.04",
 
   "hostRequirements": { "gpu": true },
 
