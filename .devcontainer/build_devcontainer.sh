@@ -38,6 +38,7 @@ generate_devcontainer() {
     git clone --quiet https://github.com/rapidsai/devcontainers.git 
     cd devcontainers
     git -c advice.detachedHead=false checkout --quiet 397a978c0d2d0629f90e97de74e826f882f41c96
+    # Parse the matrix to find the earliest version of Ubuntu that supports the host compiler
     local ubuntu_version=$(yq e -o json matrix.yml | jq -r --arg cname "$host_compiler_name" --arg cversion "$host_compiler_version" '.include[] | select(any(.images[].features[]; .name == $cname and .version == $cversion)) .os' | sort | head -n1)
     local features_list='[{"name":"'"${host_compiler_name}"'","version":"'"${host_compiler_version}"'"}, {"name":"cuda","version":"'"${cuda_version}"'"}, {"name": "ghcr.io/devcontainers/features/python:1"}, {"name": "python-lit"}]'
     # This defines and initializes`workspace` with the path to the generated devcontainer files
