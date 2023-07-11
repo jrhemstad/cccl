@@ -18,6 +18,12 @@ on:
       CUDA_VERSIONS:
         description: "The unique CUDA versions in the full matrix."
         value: ${{ jobs.compute-matrix.outputs.CUDA_VERSIONS }}
+      OLDEST_CUDA_VERSION:
+        description: "The oldest CUDA version in the full matrix."
+        value: ${{ jobs.compute-matrix.outputs.OLDEST_CUDA_VERSION }}
+      NEWEST_CUDA_VERSION:
+        description: "The newest CUDA version in the full matrix."
+        value: ${{ jobs.compute-matrix.outputs.NEWEST_CUDA_VERSION }}
       COMPILERS:
         description: "The unique compilers in the full matrix."
         value: ${{ jobs.compute-matrix.outputs.COMPILERS }}
@@ -40,6 +46,8 @@ jobs:
     outputs:
       FULL_MATRIX:  ${{ steps.compute-matrix.outputs.FULL_MATRIX }}
       CUDA_VERSIONS: ${{ steps.compute-matrix.outputs.CUDA_VERSIONS }}
+      OLDEST_CUDA_VERSION: ${{ steps.compute-matrix.outputs.OLDEST_CUDA_VERSION }}
+      NEWEST_CUDA_VERSION: ${{ steps.compute-matrix.outputs.NEWEST_CUDA_VERSION }}
       COMPILERS: ${{ steps.compute-matrix.outputs.COMPILERS }}
       PER_CUDA_COMPILER_MATRIX: ${{ steps.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX }}
     steps:
@@ -59,6 +67,10 @@ jobs:
           FULL_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c --arg matrix_type "$MATRIX_TYPE" '[ .[$matrix_type][] | . as $o | {std: .std[]} + del($o.std)]')
           echo "FULL_MATRIX=$FULL_MATRIX" | tee -a "$GITHUB_OUTPUT"
           CUDA_VERSIONS=$(echo $FULL_MATRIX | jq -c '[.[] | .cuda] | unique')
+          OLDEST_CUDA_VERSION=$(echo $CUDA_VERSIONS | jq -r '.[0]')
+          echo "OLDEST_CUDA_VERSION=$OLDEST_CUDA_VERSION" | tee -a "$GITHUB_OUTPUT"
+          NEWEST_CUDA_VERSION=$(echo $CUDA_VERSIONS | jq -r '.[-1]')
+          echo "NEWEST_CUDA_VERSION=$NEWEST_CUDA_VERSION" | tee -a "$GITHUB_OUTPUT"
           echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
           COMPILERS=$(echo $FULL_MATRIX | jq -c '[.[] | .compiler.name] | unique')
           echo "COMPILERS=$COMPILERS" | tee -a "$GITHUB_OUTPUT"
