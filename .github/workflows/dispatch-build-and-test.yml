@@ -31,8 +31,6 @@ jobs:
       build_script: ${{ inputs.build_script }}
       build_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       test_script: ${{ inputs.test_script }}
-      nvrtc_script: ${{ inputs.nvrtc_script }}
-      run_nvrtc: ${{ contains(matrix.jobs, 'nvrtc') }}
       run_tests: ${{ contains(matrix.jobs, 'test') && !contains(github.event.head_commit.message, 'skip-tests') }}
       test_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
 
