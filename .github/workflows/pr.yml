@@ -97,7 +97,7 @@ jobs:
           echo "NVRTC_MATRIX=$NVRTC_MATRIX" | tee -a "$GITHUB_OUTPUT"
 
   nvrtc:
-    name: NVRTC CUDA${{ matrix.cuda_version }} C++${{matrix.std}}
+    name: NVRTC CUDA${{matrix.cuda}} C++${{matrix.std}}
     needs: [compute-nvrtc-matrix, get-devcontainer-version]
     uses: ./.github/workflows/run-as-coder.yml
     strategy:
