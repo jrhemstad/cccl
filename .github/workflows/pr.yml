@@ -76,6 +76,42 @@ jobs:
           PER_CUDA_COMPILER_MATRIX=$(echo $FULL_MATRIX | jq -c ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')
           echo "PER_CUDA_COMPILER_MATRIX=$PER_CUDA_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
 
+  compute-nvrtc-matrix:
+    name: Compute NVRTC matrix
+    runs-on: ubuntu-latest
+    outputs:
+      NVRTC_MATRIX: ${{ steps.set-outputs.outputs.NVRTC_MATRIX }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Get full nvrtc matrix
+        id: compute-nvrtc-matrix
+        uses: ./.github/actions/compute-matrix
+        with:
+          matrix_file: './ci/matrix.yaml'
+          matrix_query: '.pull_request.nvrtc'
+      - name: Set outputs
+        id: set-outputs
+        run: |
+          NVRTC_MATRIX='${{steps.compute-nvrtc-matrix.outputs.matrix}}'
+          echo "NVRTC_MATRIX=$NVRTC_MATRIX" | tee -a "$GITHUB_OUTPUT"
+
+  nvrtc:
+    name: NVRTC CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+    needs: [compute-nvrtc-matrix, get-devcontainer-version]
+    uses: ./.github/workflows/run-as-coder.yml
+    strategy:
+      fail-fast: false
+      matrix: 
+        include: ${{ fromJSON(needs.compute-nvrtc-matrix.outputs.NVRTC_MATRIX) }}
+    with:
+      name: NVRTC CUDA${{matrix.cuda}}
+      runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
+      image: rapidsai/devcontainers:${{needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION}}-cpp-gcc12-cuda${{matrix.cuda}}-${{matrix.os}}
+      command: |
+        ./ci/nvrtc_libcudacxx.sh g++ ${{matrix.std}} ${{matrix.gpu_build_archs}}
+        
+
   thrust:
     name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
     needs: [compute-nvcc-matrix, get-devcontainer-version]
