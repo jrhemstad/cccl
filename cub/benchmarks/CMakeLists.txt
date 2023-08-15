@@ -47,6 +47,15 @@ if(GIT_FOUND)
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         OUTPUT_VARIABLE cub_revision
         OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    if(cub_revision STREQUAL "")
+      # There's currently no tag
+      execute_process(
+          COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+          OUTPUT_VARIABLE cub_revision
+          OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif()
     message(STATUS "Git revision: ${cub_revision}")
 else()
     message(WARNING "Git not found. Unable to determine Git revision.")
@@ -96,7 +105,8 @@ function(add_bench target_name bench_name bench_src)
       ARCHIVE_OUTPUT_DIRECTORY "${CUB_LIBRARY_OUTPUT_DIR}"
       LIBRARY_OUTPUT_DIRECTORY "${CUB_LIBRARY_OUTPUT_DIR}"
       RUNTIME_OUTPUT_DIRECTORY "${CUB_EXECUTABLE_OUTPUT_DIR}"
-  )
+      CUDA_STANDARD 17
+      CXX_STANDARD 17)
 endfunction()
 
 function(add_bench_dir bench_dir)

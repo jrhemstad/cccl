@@ -36,9 +36,11 @@
 // %RANGE% TUNE_WORK_STEALING ws 0:1:1
 // %RANGE% TUNE_MEM_PREFERENCE mem 0:2:1
 // %RANGE% TUNE_LOAD ld 0:2:1
+// %RANGE% TUNE_LOAD_ALGORITHM_ID laid 0:2:1
+// %RANGE% TUNE_VEC_SIZE_POW vec 0:2:1
 
 template <typename SampleT, typename CounterT, typename OffsetT>
-static void histogram(nvbench::state &state, nvbench::type_list<SampleT, CounterT, OffsetT>)
+static void range(nvbench::state &state, nvbench::type_list<SampleT, CounterT, OffsetT>)
 {
   constexpr int num_channels        = 4;
   constexpr int num_active_channels = 3;
@@ -46,7 +48,7 @@ static void histogram(nvbench::state &state, nvbench::type_list<SampleT, Counter
   using sample_iterator_t = SampleT *;
 
 #if !TUNE_BASE
-  using policy_t   = policy_hub_t<key_t, num_active_channels>;
+  using policy_t   = policy_hub_t<key_t, num_channels, num_active_channels>;
   using dispatch_t = cub::DispatchHistogram<num_channels, //
                                             num_active_channels,
                                             sample_iterator_t,
@@ -151,9 +153,9 @@ using sample_types = nvbench::type_list<TUNE_SampleT>;
 using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float, double>;
 #endif // TUNE_SampleT
 
-NVBENCH_BENCH_TYPES(histogram, NVBENCH_TYPE_AXES(sample_types, bin_types, some_offset_types))
-  .set_name("cub::DeviceHistogram::MultiHistogramRange")
+NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, bin_types, some_offset_types))
+  .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "BinT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_int64_axis("Bins", {128, 2048, 2097152})
-  .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});
+  .add_int64_axis("Bins", {32, 64, 128, 2048, 2097152})
+  .add_string_axis("Entropy", {"0.201", "0.544", "1.000"});
