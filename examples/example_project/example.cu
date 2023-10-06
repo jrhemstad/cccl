@@ -19,7 +19,7 @@
 This is a simple example demonstrating the use of CCCL functionality from Thrust, CUB, and libcu++.
 
 The example computes the sum of an array of integers using a simple parallel reduction. Each thread block
-computes the sum of a subset of the array using cuB::BlockRecuce. The sum of each block is then reduced 
+computes the sum of a subset of the array using cuB::BlockRecuce. The sum of each block is then reduced
 to a single value using an atomic add via cuda::atomic_ref from libcu++. The result is stored in a device_vector
 from Thrust. The sum is then printed to the console.
 */
@@ -54,6 +54,9 @@ __global__ void sumKernel(int const* data, int* result, std::size_t N)
 
 int main()
 {
+    std::printf("THRUST_VERSION: %d\n", THRUST_VERSION);
+    std::printf("CUB_VERSION: %d\n", CUB_VERSION);
+    std::printf("LIBCUDACXX_VERSION: %d\n", _LIBCUDACXX_CUDA_API_VERSION);
     std::size_t N = 1000;
     thrust::device_vector<int> data(N, 1);
     thrust::device_vector<int> result(1);
