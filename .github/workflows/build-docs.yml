@@ -105,6 +105,21 @@ jobs:
             echo "message=Deploy main docs (${{ github.sha }})" >> $GITHUB_OUTPUT
           fi
 
+      - name: Ensure .nojekyll exists at docs root for Jekyll processing
+        run: |
+          mkdir -p temp_jekyll_fix
+          touch temp_jekyll_fix/.nojekyll
+
+      - name: Deploy .nojekyll to docs root
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.FORK_DEPLOY_TOKEN || secrets.GITHUB_TOKEN }}
+          publish_dir: ./temp_jekyll_fix
+          publish_branch: gh-pages
+          destination_dir: docs
+          keep_files: true
+          commit_message: "Ensure .nojekyll at docs root"
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
