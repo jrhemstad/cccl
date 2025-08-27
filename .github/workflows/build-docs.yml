@@ -69,7 +69,10 @@ jobs:
 
           # Show final GitHub Pages URL for testing
           if [ -n "${{ inputs.pr_number }}" ]; then
-            echo "📖 Expected Preview URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ inputs.destination_dir }}/"
+            # Remove 'docs/' prefix since GitHub Pages serves from /docs directory
+            PREVIEW_PATH="${{ inputs.destination_dir }}"
+            PREVIEW_PATH="${PREVIEW_PATH#docs/}"
+            echo "📖 Expected Preview URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${PREVIEW_PATH}/"
           fi
 
       - name: Checkout
@@ -123,7 +126,7 @@ jobs:
           message: |
             ## 📖 Doc Preview CI
 
-            🚀 **Preview URL:** [https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ inputs.destination_dir }}/](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ inputs.destination_dir }}/)
+            🚀 **Preview URL:** [https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ inputs.pr_number }}/](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ inputs.pr_number }}/)
 
             > **Note:** Preview will be ready when the GitHub Pages deployment is complete.
 
