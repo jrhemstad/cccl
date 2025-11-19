@@ -1,0 +1,115 @@
+name: Deploy CCCL Documentation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      destination_override:
+        description: "Optional destination directory (e.g. unstable, 3.0) for manual runs"
+        required: false
+        type: string
+      update_root:
+        description: "When using destination_override, also update root redirect/metadata"
+        required: false
+        type: boolean
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  deploy:
+    name: Build and deploy documentation
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Determine deployment destination
+        id: destination
+        shell: bash --noprofile --norc -euo pipefail {0}
+        env:
+          DESTINATION_OVERRIDE: ${{ github.event.inputs.destination_override }}
+          UPDATE_ROOT_OVERRIDE: ${{ github.event.inputs.update_root }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ -n "${DESTINATION_OVERRIDE}" ]; then
+            dest_dir="${DESTINATION_OVERRIDE}"
+            update_root="${UPDATE_ROOT_OVERRIDE:-false}"
+          else
+            ref="${GITHUB_REF#refs/heads/}"
+            if [ "$ref" = "main" ]; then
+              dest_dir="unstable"
+              update_root="true"
+            elif [[ "$ref" == branch/* ]]; then
+              version="${ref#branch/}"
+              if [ -z "$version" ]; then
+                echo "Unable to determine version directory from branch '${ref}'." >&2
+                exit 1
+              fi
+              dest_dir="${version}"
+              update_root="false"
+            else
+              echo "Branch '${ref}' is not configured for docs deployment." >&2
+              exit 1
+            fi
+          fi
+
+          echo "destination_dir=${dest_dir}" >> "${GITHUB_OUTPUT}"
+          echo "update_root=${update_root}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build docs
+        uses: ./.github/actions/docs-build
+        with:
+          upload_workflow_artifact: "false"
+
+      - name: Prepare deployment artifacts
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          dest="${{ steps.destination.outputs.destination_dir }}"
+          update_root="${{ steps.destination.outputs.update_root }}"
+          root_dir="deploy/docs"
+          dest_dir="${root_dir}/${dest}"
+
+          mkdir -p "${dest_dir}"
+          mkdir -p "${root_dir}"
+
+          cp -a _site/. "${dest_dir}/"
+
+          cp docs/nv-versions.json "${root_dir}/nv-versions.json"
+
+          if [ "${update_root}" = "true" ]; then
+            if [ -f "${dest_dir}/objects.inv" ]; then
+              cp "${dest_dir}/objects.inv" "${root_dir}/objects.inv"
+            else
+              echo "Warning: objects.inv not found in ${dest_dir}" >&2
+            fi
+
+            cat > "${root_dir}/index.html" <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta http-equiv="refresh" content="0; url=./unstable/">
+              <title>Redirecting…</title>
+            </head>
+            <body>
+              <p>This page has moved. If you are not redirected automatically, follow this <a href="./unstable/">link to the unstable documentation</a>.</p>
+            </body>
+          </html>
+          EOF
+          fi
+
+          touch "${root_dir}/.nojekyll"
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          publish_branch: gh-pages
+          keep_files: true

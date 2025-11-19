@@ -116,6 +116,8 @@ exclude_patterns = [
 html_theme = "nvidia_sphinx_theme"
 
 html_logo = "_static/nvidia-logo.png"
+version_match = "unstable"
+
 html_theme_options = {
     "icon_links": [
         {
@@ -128,11 +130,15 @@ html_theme_options = {
     "navigation_depth": 4,
     "show_toc_level": 2,
     "navbar_start": ["navbar-logo"],
-    "navbar_end": ["theme-switcher", "navbar-icon-links"],
+    "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
     "footer_start": ["copyright"],
     "footer_end": ["sphinx-version"],
     "sidebar_includehidden": True,
     "collapse_navigation": False,
+    "switcher": {
+        "json_url": "https://nvidia.github.io/cccl/nv-versions.json",
+        "version_match": version_match,
+    },
 }
 
 html_static_path = ["_static"] if os.path.exists("_static") else []
