@@ -225,6 +225,53 @@ cat > "${HTML_DIR}/index.html" <<EOF
 </html>
 EOF
 
+# Redirect site-root 404s into the current versioned docs tree.
+# GitHub Pages serves /<repo>/404.html for missing paths in project sites.
+cat > "${HTML_DIR}/404.html" <<EOF
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="refresh" content="0; url=./${VERSION}/404.html">
+    <meta name="cccl-docs-version" content="${VERSION}">
+    <title>Redirecting…</title>
+  </head>
+  <body>
+    <p>This page has moved. If you are not redirected automatically, follow this <a href="./${VERSION}/404.html">link to the ${VERSION} 404 page</a>.</p>
+    <script>
+      (function () {
+        var version = ${VERSION@Q};
+        var baseUrl = ${BASE_URL@Q};
+        var current = new URL(window.location.href);
+        var currentPath = current.pathname.replace(/\/+$/, "");
+        var basePath = new URL(baseUrl, current.origin).pathname.replace(/\/+$/, "");
+        var prefix = basePath ? basePath + "/" : "/";
+        var defaultTarget = (basePath ? basePath : "") + "/" + version + "/404.html";
+        var targetPath = defaultTarget;
+
+        if (currentPath.startsWith(prefix)) {
+          var relPath = currentPath.slice(prefix.length);
+          if (!relPath || relPath === "404.html") {
+            targetPath = (basePath ? basePath : "") + "/" + version + "/";
+          } else if (!relPath.startsWith(version + "/")) {
+            targetPath = (basePath ? basePath : "") + "/" + version + "/" + relPath;
+          } else {
+            targetPath = (basePath ? basePath : "") + "/" + relPath;
+          }
+        }
+
+        targetPath = targetPath.replace(/\/{2,}/g, "/");
+        var nextUrl = targetPath + current.search + current.hash;
+
+        if (nextUrl !== current.pathname + current.search + current.hash) {
+          window.location.replace(nextUrl);
+        }
+      })();
+    </script>
+  </body>
+</html>
+EOF
+
 # Copy objects.inv to the root to support intersphinx consumers
 if [ -f "${HTML_DIR}/${VERSION}/objects.inv" ]; then
     cp "${HTML_DIR}/${VERSION}/objects.inv" "${HTML_DIR}/objects.inv"

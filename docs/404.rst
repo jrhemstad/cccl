@@ -14,7 +14,9 @@ The page you're seeking could not be found. Here is a list of similar pages:
       import Fuse from 'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.mjs'
       var localUri = window.location.pathname;
       var hostUrl = window.location.protocol + "//" + window.location.host
-      var pagelistUrl = hostUrl + "/cccl/pagelist.txt"
+      var pathParts = localUri.split('/').filter(Boolean)
+      var repoBase = pathParts.length > 0 ? "/" + pathParts[0] : ""
+      var pagelistUrl = hostUrl + repoBase + "/pagelist.txt"
 
       fetch(pagelistUrl)
         .then((response) => response.text())
