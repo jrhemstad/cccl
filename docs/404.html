@@ -14,10 +14,10 @@
         var localUri = window.location.pathname;
         var hostUrl = window.location.protocol + "//" + window.location.host
 
-        // Check if user query is missing a branch prefix, e.g. cccl/thrust/vector.h
-        var rootPathMatch = localUri.match(/^\/cccl(?:\/unstable|\/branch\/\d+\.\d+\.\d+)/)
+        // Check if user query is missing a version prefix, e.g. cccl/thrust/vector.h
+        var rootPathMatch = localUri.match(/^\/cccl(?:\/unstable|\/\d+\.\d+\.\d+|\/branch\/\d+\.\d+\.x)/)
         // Remove leading prefix, this is fed as a URI search argument to the appropriate 404 handler.
-        var searchPathMatch = localUri.replace(/^\/cccl(?:\/unstable|\/branch\/\d+\.\d+\.\d+)?/, "")
+        var searchPathMatch = localUri.replace(/^\/cccl(?:\/unstable|\/\d+\.\d+\.\d+|\/branch\/\d+\.\d+\.x)?/, "")
 
         // Project default root leads to unstable
         var rootPath = "/cccl/unstable"

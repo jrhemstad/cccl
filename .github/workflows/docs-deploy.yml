@@ -1,10 +1,11 @@
 # Usage:
 #   - Automatic deploys run on pushes to main and publish docs under docs/unstable/.
 #   - Manual workflow_dispatch accepts:
+#       * source_ref: optional Git ref to build from (tag, branch, or commit SHA)
 #       * destination_override: publish into a custom docs/<dir> (e.g. for fork testing)
 #       * latest_override: optional, override the "latest" flag (kept for compatibility)
-#   - Root assets (index.html redirect, nv-versions.json, objects.inv, .nojekyll) are produced during the doc build.
-#   - Base URL is computed from GITHUB_REPOSITORY (owner/repo) for both push and manual runs.
+#   - Root assets (index.html redirect, nv-versions.json, objects.inv, .nojekyll) are produced during deployment.
+#   - Base URL is computed from GITHUB_REPOSITORY for push/manual runs.
 name: Deploy CCCL Documentation
 
 on:
@@ -13,6 +14,10 @@ on:
       - main
   workflow_dispatch:
     inputs:
+      source_ref:
+        description: "Optional Git ref to build docs from (tag, branch, or commit SHA)"
+        required: false
+        type: string
       destination_override:
         description: "Directory under docs/ to publish to (e.g. unstable, 3.0)"
         required: false
@@ -31,11 +36,6 @@ jobs:
     name: Build and deploy documentation
     runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
       - name: Compute base URL
         id: base_url
         shell: bash --noprofile --norc -euo pipefail {0}
@@ -51,29 +51,56 @@ jobs:
           fi
           echo "base=https://${owner}.github.io/${repo_name}/" >> "${GITHUB_OUTPUT}"
 
+      - name: Resolve source ref
+        id: source_ref
+        shell: bash --noprofile --norc -euo pipefail {0}
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+        run: |
+          ref_input="${SOURCE_REF:-}"
+          if [ -z "${ref_input}" ]; then
+            ref_input="${GITHUB_REF}"
+          fi
+
+          checkout_ref="${ref_input}"
+          if [[ "${checkout_ref}" != refs/* ]]; then
+            if [[ "${checkout_ref}" == v[0-9]*.[0-9]*.[0-9]* ]]; then
+              checkout_ref="refs/tags/${checkout_ref}"
+            elif [[ "${checkout_ref}" == main ]]; then
+              checkout_ref="refs/heads/${checkout_ref}"
+            fi
+          fi
+
+          echo "source_ref=${ref_input}" >> "${GITHUB_OUTPUT}"
+          echo "checkout_ref=${checkout_ref}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ steps.source_ref.outputs.checkout_ref }}
+
       - name: Determine deployment destination
         id: destination
         shell: bash --noprofile --norc -euo pipefail {0}
         env:
           DESTINATION_OVERRIDE: ${{ github.event.inputs.destination_override }}
           LATEST_OVERRIDE: ${{ github.event.inputs.latest_override }}
+          CHECKOUT_REF: ${{ steps.source_ref.outputs.checkout_ref }}
         run: |
           if [ -n "${DESTINATION_OVERRIDE}" ]; then
             dest_dir="${DESTINATION_OVERRIDE}"
           else
-            ref="${GITHUB_REF#refs/heads/}"
-            if [ "$ref" = "main" ]; then
+            if [ "${CHECKOUT_REF}" = "refs/heads/main" ]; then
               dest_dir="unstable"
-            elif [[ "$ref" == branch/* ]]; then
-              version="${ref#branch/}"
-              if [ -z "$version" ]; then
-                echo "Unable to determine version directory from branch '${ref}'." >&2
+            else
+              version="$(python3 -c 'import json, pathlib; p = pathlib.Path("cccl-version.json"); print(json.loads(p.read_text(encoding="utf-8")).get("full", "") if p.exists() else "")')"
+              if [[ -z "${version}" || ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                echo "Unable to infer docs destination from cccl-version.json at '${CHECKOUT_REF}'." >&2
+                echo "Expected a semantic version in '.full' (X.Y.Z), or provide destination_override." >&2
                 exit 1
               fi
               dest_dir="${version}"
-            else
-              echo "Branch '${ref}' is not configured for docs deployment." >&2
-              exit 1
             fi
           fi
 
@@ -113,11 +140,31 @@ jobs:
 
           cp -a _site/. "${root_dir}/"
 
+      - name: Update nv-versions manifest
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+          existing_manifest="$(mktemp)"
+          echo "[]" > "${existing_manifest}"
+
+          git fetch --no-tags --depth=1 origin gh-pages || true
+          git show FETCH_HEAD:docs/nv-versions.json > "${existing_manifest}" 2>/dev/null || true
+
+          ./ci/update_nv_versions.bash \
+            --existing-json "${existing_manifest}" \
+            --new-version "${{ steps.destination.outputs.destination_dir }}" \
+            --base-url "${{ steps.base_url.outputs.base }}" \
+            --output "deploy/docs/nv-versions.json"
+
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4.8.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./deploy
-          publish_branch: gh-pages
-          keep_files: true
-          force_orphan: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          folder: deploy
+          clean: false
+          single-commit: true
+          git-config-name: cccl-docs-bot
+          git-config-email: cccl-docs-bot@users.noreply.github.com
