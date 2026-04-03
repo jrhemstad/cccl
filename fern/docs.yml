@@ -1,0 +1,63 @@
+# CCCL Fern pilot config.
+# This is intentionally scoped to CUB + Thrust for low-risk evaluation.
+
+title: CCCL Fern Pilot
+
+instances:
+  - url: https://cccl.docs.buildwithfern.com
+
+versions:
+  - display-name: latest
+    slug: latest
+    path: product-docs/rl/versions/latest.yml
+
+libraries:
+  cub:
+    lang: cpp
+    input:
+      git: https://github.com/NVIDIA/cccl
+      subpath: cub
+    output:
+      path: ./product-docs/rl/Library-Reference/cuda
+    config:
+      doxyfile: ./doxyfiles/Doxyfile_cub_fern
+
+  thrust:
+    lang: cpp
+    input:
+      git: https://github.com/NVIDIA/cccl
+      subpath: thrust
+    output:
+      path: ./product-docs/rl/Library-Reference/thrust
+    config:
+      doxyfile: ./doxyfiles/Doxyfile_thrust_fern
+
+  cudax:
+    lang: cpp
+    input:
+      git: https://github.com/NVIDIA/cccl
+      subpath: cudax
+    output:
+      path: ./product-docs/rl/Library-Reference/cudax
+    config:
+      doxyfile: ./doxyfiles/Doxyfile_cudax_fern
+
+  libcudacxx:
+    lang: cpp
+    input:
+      git: https://github.com/NVIDIA/cccl
+      subpath: libcudacxx
+    output:
+      path: ./product-docs/rl/Library-Reference/libcudacxx
+    config:
+      doxyfile: ./doxyfiles/Doxyfile_libcudacxx_fern
+
+  synthetic_mdx_repro:
+    lang: cpp
+    input:
+      git: https://github.com/jrhemstad/cccl
+      subpath: fern/reproducers/synthetic-mdx/lib
+    output:
+      path: ./product-docs/rl/Library-Reference/synthetic-mdx-repro
+    config:
+      doxyfile: ./doxyfiles/Doxyfile_synthetic_mdx_repro

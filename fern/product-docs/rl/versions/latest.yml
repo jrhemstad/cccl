@@ -1,0 +1,20 @@
+navigation:
+  - section: CUDA API Reference (Fern Pilot)
+    contents:
+      - folder: ../Library-Reference/cuda
+
+  - section: Thrust API Reference (Fern Pilot)
+    contents:
+      - folder: ../Library-Reference/thrust
+
+  - section: CUDAX API Reference (Fern Pilot)
+    contents:
+      - folder: ../Library-Reference/cudax
+
+  - section: libcudacxx API Reference (Fern Pilot)
+    contents:
+      - folder: ../Library-Reference/libcudacxx
+
+  - section: Synthetic MDX Repro
+    contents:
+      - folder: ../Library-Reference/synthetic-mdx-repro

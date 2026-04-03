@@ -18,3 +18,7 @@ __pycache__
 *.pyd
 wheelhouse/
 bench-artifacts/
+
+# Fern docs generation artifacts and local repro scratch workspaces
+fern/.fern/
+fern/product-docs/rl/Library-Reference/
